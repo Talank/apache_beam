@@ -19,25 +19,6 @@ name: Run Python Mobile Gaming RC Validation
 
 on:
   workflow_dispatch:
-    inputs:
-      RELEASE_VER:
-        description: 'Beam Release Version (e.g., 2.64.0)'
-        required: true
-        default: '2.64.0'
-      RC_NUM:
-        description: 'Release Candidate number (e.g., 1)'
-        required: true
-        default: '1'
-      APACHE_CONTENTS_REPO:
-        description: 'Apache Staging Repository URL for Java Injector (e.g., https://repository.apache.org/content/repositories/orgapachebeam-1234)'
-        required: true
-      CLEANUP_BQ_RESOURCES:
-        description: 'Whether to delete the BigQuery dataset after the test run (true/false)'
-        required: false
-        type: boolean
-        default: true
-
-# This allows a subsequently queued workflow run to interrupt previous runs
 concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.inputs.RELEASE_VER }}-${{ github.event.inputs.RC_NUM }}'
   cancel-in-progress: true
@@ -64,7 +45,8 @@ env: # Workflow level env vars if needed, specific ones are below
 
 jobs:
   run_python_mobile_gaming_rc_validation:
-    name: Run Python Mobile Gaming RC Validation (${{ github.event.inputs.RELEASE_VER }} RC${{ github.event.inputs.RC_NUM }})
+    name: Run Python Mobile Gaming RC Validation (${{ github.event.inputs.RELEASE_VER }} RC${{ 
+      github.event.inputs.RC_NUM }})
     runs-on: [self-hosted, ubuntu-24.04, main]
     timeout-minutes: 360
     env: # Job-level env vars inherit workflow level and define job-specific ones
@@ -522,7 +504,7 @@ jobs:
 
       # Cleanup GCP resources
       - name: Cleanup BigQuery Dataset
-        if: always() && github.event.inputs.CLEANUP_BQ_RESOURCES == 'true'
+        if: always()
         run: |
           echo "Deleting BigQuery dataset: ${{ env.BQ_DATASET }} in project ${{ env.GCP_PROJECT_ID }}"
           bq rm --project_id=${{ env.GCP_PROJECT_ID }} -f -r ${{ env.BQ_DATASET }} || echo "Failed to delete BQ dataset ${{ env.BQ_DATASET }}, continuing..."
@@ -546,3 +528,5 @@ jobs:
           echo "Deleting PubSub topic: ${{ env.PUBSUB_TOPIC }} in project ${{ env.GCP_PROJECT_ID }}"
           gcloud pubsub topics delete --project=${{ env.GCP_PROJECT_ID }} ${{ env.PUBSUB_TOPIC }} --quiet || echo "Failed to delete PubSub topic ${{ env.PUBSUB_TOPIC }}, continuing..."
         shell: bash
+    strategy:
+      fail-fast: false
